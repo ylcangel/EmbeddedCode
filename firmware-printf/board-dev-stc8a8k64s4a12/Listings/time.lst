@@ -1,0 +1,164 @@
+C51 COMPILER V9.60.0.0   TIME                                                              03/08/2022 17:17:58 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TIME
+OBJECT MODULE PLACED IN .\Objects\time.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\..\stm_projs\time.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT
+                    -(.\Listings\time.lst) TABS(2) OBJECT(.\Objects\time.obj)
+
+line level    source
+
+   1          /*
+   2           * Copyright        : Shendong mcu studio
+   3           * File Description : Time related function.
+   4           * Created          : by oliverzhang@shendongmcu.com
+   5           */
+   6          
+   7          #include "global.h"
+   8          
+   9          /*System ticks*/
+  10          static volatile unsigned long xdata g_sys_ticks;
+  11          volatile unsigned int xdata g_high_timer;
+  12          
+  13          /*Timer 0 as system tick timer. Freely running.*/
+  14          void time_Initialization(void)
+  15          {
+  16   1        /*Timer0 at 16-bit timer mode.*/
+  17   1        TMOD = (TMOD & 0xf0u) | 0x01u;
+  18   1        TL0 = 0u;
+  19   1        TH0 = 0u; 
+  20   1        ET0 = 1; /*Enable timer0 interrupt.*/
+  21   1        TR0 = 1; /*Start running.*/
+  22   1      }
+  23          
+  24          void timer0_ISR(void) interrupt 1
+  25          {
+  26   1        g_high_timer++;
+  27   1      }
+  28          
+  29          void tick_Task(void)
+  30          {
+  31   1        static unsigned long idata old_count;
+  32   1        unsigned long count;
+  33   1        unsigned int timer;
+  34   1        unsigned char th0,tl0;
+  35   1        static unsigned char idata old_th0;
+  36   1        
+  37   1        /*to prevent program to executed too frequently.*/
+  38   1        th0 = TH0;
+  39   1        //if(th0 - old_th0 < 5) return;
+  40   1        old_th0 = th0;
+  41   1        
+  42   1        /*Get the snapshot of current high_timer and TH0/TL0 */
+  43   1        TR0 = 0;   /*Stop timer0*/
+  44   1        __disable_irq();
+  45   1        tl0 = TL0;
+  46   1        th0 = TH0;
+  47   1        timer = g_high_timer;
+  48   1        if(TF0) timer++;
+  49   1        __enable_irq();
+  50   1        TR0 = 1;
+  51   1        /*organize snapshot to a 32-bit value.*/
+  52   1        count = timer;
+  53   1        count <<= 16;
+  54   1        timer = th0;
+C51 COMPILER V9.60.0.0   TIME                                                              03/08/2022 17:17:58 PAGE 2   
+
+  55   1        timer <<= 8;
+  56   1        timer |= tl0;
+  57   1        count |= timer;
+  58   1        /*To ignore overflow condition, which occurs every 77 minutes.*/
+  59   1        if(count < old_count)
+  60   1        {
+  61   2          old_count = count;
+  62   2          return;
+  63   2        }
+  64   1        /*update system ticks, which stand for elapsed running Milliseconds.*/
+  65   1      #if (CFG_SYSFREQ == 11059200UL)
+                for( ; count - old_count > 922; old_count += 922) g_sys_ticks++;
+              #elif (CFG_SYSFREQ == 22118400UL)
+  68   1        for( ; count - old_count > 1844; old_count += 1844) g_sys_ticks++;
+  69   1      #else 
+                #error "Must have a choice."
+              #endif 
+  72   1      }
+  73          
+  74          unsigned long time_GetTicks(void)
+  75          {
+  76   1        return g_sys_ticks;
+  77   1      }
+  78          
+  79          //----------------------------------------------------------------------------------
+  80          static void Delay1us()    //@24.000MHz
+  81          {
+  82   1        unsigned char i;
+  83   1      
+  84   1        i = 6;
+  85   1        while (--i);
+  86   1      }
+  87          
+  88          static void Delay10us()   //@24.000MHz
+  89          {
+  90   1        unsigned char i;
+  91   1      
+  92   1        i = 78;
+  93   1        while (--i);
+  94   1      }
+  95          
+  96          
+  97          static void Delay100us()    //@24.000MHz
+  98          {
+  99   1        unsigned char i, j;
+ 100   1      
+ 101   1        i = 4;
+ 102   1        j = 27;
+ 103   1        do
+ 104   1        {
+ 105   2          while (--j);
+ 106   2        } while (--i);
+ 107   1      }
+ 108          
+ 109          
+ 110          static void Delay1ms()    //@24.000MHz
+ 111          {
+ 112   1        unsigned char i, j;
+ 113   1      
+ 114   1        _nop_();
+ 115   1        i = 32;
+ 116   1        j = 40;
+C51 COMPILER V9.60.0.0   TIME                                                              03/08/2022 17:17:58 PAGE 3   
+
+ 117   1        do
+ 118   1        {
+ 119   2          while (--j);
+ 120   2        } while (--i);
+ 121   1      }
+ 122          //----------------------------------------------------------------------------------
+ 123          void time_HoggingDelayMs(unsigned int ms)
+ 124          {
+ 125   1        for(;ms;ms--)
+ 126   1        {
+ 127   2          Delay1ms();
+ 128   2        }
+ 129   1      }
+ 130          
+ 131          void time_HoggingDelayUs(unsigned int us)
+ 132          {
+ 133   1        for(;us>=100;us-=100) Delay100us();
+ 134   1        for(;us>=10;us-=10) Delay10us();
+ 135   1        for(;us>0;us--) Delay1us();
+ 136   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    391    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =      6    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       4
+   IDATA SIZE       =      5    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

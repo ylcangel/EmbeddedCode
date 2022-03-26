@@ -1,0 +1,120 @@
+C51 COMPILER V9.60.0.0   LCD1602                                                           12/25/2021 17:51:57 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LCD1602
+OBJECT MODULE PLACED IN .\Objects\lcd1602.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE lcd1602.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\l
+                    -cd1602.lst) TABS(2) OBJECT(.\Objects\lcd1602.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          
+   3          // https://zhuanlan.zhihu.com/p/166184285
+   4          
+   5          #define SETMODE  0x38
+   6          #define DISOPEN  0x0C
+   7          #define DISMODE  0x6
+   8          #define DISSHIFT 0x14
+   9          #define CLEAR  0x01
+  10          #define RET  0x02
+  11          
+  12          #define SETADDR  0x80
+  13          
+  14          sbit LCD_RS = P5^0;
+  15          sbit LCD_RW = P5^1;
+  16          sbit LCD_E = P5^2;
+  17          
+  18          #define LCD_DB P2
+  19          
+  20          void lcd_write_data(uint8 dat) {
+  21   1        lcd_checkbusy();
+*** WARNING C206 IN LINE 21 OF lcd1602.c: 'lcd_checkbusy': missing function-prototype
+  22   1        // LCD_DB = dat; // also you can set LCD_DB firstly
+  23   1        
+  24   1        LCD_RS = 1;
+  25   1        LCD_E = 0;
+  26   1        LCD_RW = 0;
+  27   1        time_HoggingDelayUs(2);
+  28   1        LCD_E = 1;
+  29   1        time_HoggingDelayUs(2);
+  30   1        LCD_DB = dat;
+  31   1        LCD_E = 0;
+  32   1      }
+  33          
+  34          void lcd_write_cmd(uint8 cmd) {
+  35   1        lcd_checkbusy();
+  36   1        
+  37   1        LCD_RS = 0;
+  38   1        LCD_E = 0;
+  39   1        LCD_RW = 0;
+  40   1        time_HoggingDelayUs(2);
+  41   1        LCD_E = 1;
+  42   1        time_HoggingDelayUs(2);
+  43   1        LCD_DB = cmd;
+  44   1        LCD_E = 0;
+  45   1      }
+  46          
+  47          uint8 lcd_readstatus() {
+  48   1        uint8 status;
+  49   1        LCD_DB = 0xff;
+  50   1        
+  51   1        LCD_RS = 0;
+  52   1        LCD_RW = 1;
+  53   1        LCD_E = 0;
+C51 COMPILER V9.60.0.0   LCD1602                                                           12/25/2021 17:51:57 PAGE 2   
+
+  54   1        time_HoggingDelayUs(2);
+  55   1        LCD_E = 1;
+  56   1        time_HoggingDelayUs(2);
+  57   1        status = LCD_DB;
+  58   1        LCD_E = 0;
+  59   1        return status;
+  60   1      }
+  61          
+  62          void lcd_checkbusy() {
+*** ERROR C231 IN LINE 62 OF lcd1602.c: 'lcd_checkbusy': redefinition
+  63   1        while(lcd_readstatus() & 0x80);
+  64   1      }
+*** ERROR C231 IN LINE 64 OF lcd1602.c: 'lcd_checkbusy': redefinition
+  65          
+  66          void lcd_init() {
+  67   1        LCD_DB = 0xff;
+  68   1        LCD_E = 0;
+  69   1        time_HoggingDelayMs(50);
+  70   1        lcd_write_cmd(SETMODE);
+  71   1        lcd_write_cmd(DISOPEN);
+  72   1        lcd_write_cmd(DISMODE);
+  73   1        // lcd_write_cmd(DISSHIFT);
+  74   1        lcd_write_cmd(CLEAR);
+  75   1      }
+  76          
+  77          void lcd_write_one_data(uint8 x, uint8 y, uint8 dat) {
+  78   1        x &= 0xf; // x : line, one line can show 16 characters(2 ^ 4 )
+  79   1        y &= 0x1; // y : row, y & 0x1 ,only last bit used, 1 or 0, 0 next line disable 
+  80   1          if(y)
+  81   1             x |= 0x40; // db6 set 1, over one rows
+  82   1          x |= 0x80;
+  83   1          lcd_write_cmd(x); // addr
+  84   1          lcd_write_data(dat);
+  85   1      }
+  86          
+  87          void lcd_wirte_string(uint8 x, uint8 y, const char* pbuf) {
+  88   1          uint8_t addr = 0x80;
+  89   1          x &= 0x0f;
+  90   1          y &= 0x01;
+  91   1        
+  92   1          if(y) 
+  93   1            addr += 0x40;
+  94   1          
+  95   1          addr += x;
+  96   1          lcd_write_cmd(addr);
+  97   1          for(; x<16 && *pbuf; pbuf++, x++) {
+  98   2            lcd_write_data(*pbuf);
+  99   2          }
+ 100   1      }
+ 101          
+ 102          
+ 103           
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  2 ERROR(S)

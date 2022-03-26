@@ -1,0 +1,9 @@
+".\Objects\STARTUP.obj",
+".\Objects\main.obj",
+".\Objects\uart1.obj",
+".\Objects\spi.obj",
+".\Objects\oled13.obj",
+".\Objects\time.obj",
+".\Objects\oled.obj" 
+TO ".\Objects\printf-demo" 
+PRINT(".\Listings\printf-demo.m51") RAMSIZE(256) 

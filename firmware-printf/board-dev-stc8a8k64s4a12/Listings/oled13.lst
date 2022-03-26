@@ -1,0 +1,134 @@
+C51 COMPILER V9.60.0.0   OLED13                                                            03/08/2022 17:17:58 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE OLED13
+OBJECT MODULE PLACED IN .\Objects\oled13.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE oled13.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\ol
+                    -ed13.lst) TABS(2) OBJECT(.\Objects\oled13.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          // sh1106 oled 1.3 inch
+   3          
+   4          sbit OLED_RESET = P5^2;
+   5          sbit OLED_DC = P5^3;
+   6          
+   7          void oled_command(u1 cmd) {
+   8   1        OLED_DC = 0; // write command
+   9   1        spi_enable();
+  10   1        spi_rw(cmd);
+  11   1        spi_disable();
+  12   1        time_HoggingDelayUs(5);
+  13   1      }
+  14          
+  15          void oled_data(u1 dat) {
+  16   1        OLED_DC = 1; // write data
+  17   1        spi_enable();
+  18   1        spi_rw(dat);
+  19   1        spi_disable();
+  20   1        time_HoggingDelayUs(5);
+  21   1      }
+  22          
+  23          static void oled_datas(u1* dat, int len) {
+  24   1        int i = 0;
+  25   1        OLED_DC = 1; // write data
+  26   1        spi_enable();
+  27   1        for (; i < len; i++) {
+  28   2          spi_rw(*dat++);
+  29   2        }
+  30   1        spi_disable();
+  31   1        time_HoggingDelayUs(5);
+  32   1      }
+  33          
+  34          void oled_init() {
+  35   1        OLED_RESET = 0;
+  36   1        time_HoggingDelayMs(100);
+  37   1        OLED_RESET = 1;
+  38   1        time_HoggingDelayMs(100);
+  39   1        #if 0
+                oled_command(0xAE);//--turn off oled panel
+                oled_command(0x02);//---set low column address
+                oled_command(0x10);//---set high column address
+                oled_command(0x40);//--set start line address  Set Mapping RAM Display Start Line (0x00~0x3F)
+                oled_command(0x81);//--set contrast control register
+                oled_command(0xCF); // Set SEG Output Current Brightness
+                oled_command(0xA1);//--Set SEG/Column Mapping     0xa0???? 0xa1??
+                oled_command(0xC8);//Set COM/Row Scan Direction   0xc0???? 0xc8??
+                oled_command(0xA6);//--set normal display
+                oled_command(0xA8);//--set multiplex ratio(1 to 64)
+                oled_command(0x3f);//--1/64 duty
+                oled_command(0xD3);//-set display offset  Shift Mapping RAM Counter (0x00~0x3F)
+                oled_command(0x00);//-not offset
+                oled_command(0xd5);//--set display clock divide ratio/oscillator frequency
+                oled_command(0x80);//--set divide ratio, Set Clock as 100 Frames/Sec
+C51 COMPILER V9.60.0.0   OLED13                                                            03/08/2022 17:17:58 PAGE 2   
+
+                oled_command(0xD9);//--set pre-charge period
+                oled_command(0xF1);//Set Pre-Charge as 15 Clocks & Discharge as 1 Clock
+                oled_command(0xDA);//--set com pins hardware configuration
+                oled_command(0x12);
+                oled_command(0xDB);//--set vcomh
+                oled_command(0x40);//Set VCOM Deselect Level
+                oled_command(0x20);//-Set Page Addressing Mode (0x00/0x01/0x02)
+                oled_command(0x02);//
+                oled_command(0x8D);//--set Charge Pump enable/disable
+                oled_command(0x14);//--set(0x10) disable
+                oled_command(0xA4);// Disable Entire Display On (0xa4/0xa5)
+                oled_command(0xA6);// Disable Inverse Display On (0xa6/a7) 
+                oled_command(0X8D);  //SET DCDC??
+                oled_command(0X14);  //DCDC ON
+                #endif
+  70   1        //oled_command(0xAD);
+  71   1        //oled_command(0x8A);
+  72   1      
+  73   1        oled_command(0XAF);  //DISPLAY ON
+  74   1        oled_command(0xA1); // from left to right
+  75   1        oled_command(0xC8); // up to down
+  76   1        oled_command(0x81);//--set contrast control register
+  77   1        oled_command(0x60); // Set SEG Output Current Brightness
+  78   1        
+  79   1        #if 0
+                oled_command(0x20);//-Set Page Addressing Mode (0x00/0x01/0x02)
+                oled_command(0x0);//
+                
+                oled_command(0xA1); // from left to right
+                oled_command(0xC8); // up to down
+                
+                oled_command(0xA6); // normal dis
+                oled_command(0x40); // start display line
+                oled_command(0xB0); //page
+                oled_command(0x01); // column low
+                oled_command(0x10); // column high
+                
+                oled_command(0xDA);
+                oled_command(0x02);
+                #endif
+  95   1        
+  96   1      }
+  97          
+  98          static void oled_display_all() {
+  99   1        oled_command(0xA5);
+ 100   1      }
+ 101          
+ 102          void oled_write_page(u1* dat, u2 len) {
+ 103   1        oled_datas(dat, len);
+ 104   1      }
+ 105          
+ 106          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    173    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+C51 COMPILER V9.60.0.0   OLED13                                                            03/08/2022 17:17:58 PAGE 3   
+
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

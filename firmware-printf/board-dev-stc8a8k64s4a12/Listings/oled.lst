@@ -1,0 +1,362 @@
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE OLED
+OBJECT MODULE PLACED IN .\Objects\oled.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE oled.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\oled
+                    -.lst) TABS(2) OBJECT(.\Objects\oled.obj)
+
+line level    source
+
+   1          #include "global.h"
+   2          #include "font.h"
+   3          
+   4          #define OLED_WIDTH 132
+   5          #define OLED_HEIGHT 64
+   6          #define OLED_PAGE_SIZE 8
+   7          #define OLED_PAGE_ALIGN
+   8          #define OLED_ROW_BIT_SZ 8
+   9          #define OLED_MAX_LINE_SZ 128
+  10          
+  11          static u1 xdata OLED_GRAM[OLED_PAGE_SIZE][OLED_WIDTH];
+  12          
+  13          int ABS(int n) {
+  14   1          int tmp = n >>31; 
+  15   1          return (n ^ tmp) - tmp;
+  16   1      }
+  17          
+  18          void oled_fill_gram() {
+  19   1        u1 i,j;
+  20   1          for (i = 0; i < OLED_PAGE_SIZE; i++) {
+  21   2              for (j = 0; j < OLED_WIDTH; j++) {
+  22   3                  OLED_GRAM[i][j] = 0xff;
+  23   3              }
+  24   2          }
+  25   1      }
+  26          
+  27          void oled_clear_gram() {
+  28   1        u1 i,j;
+  29   1          for (i = 0; i < OLED_PAGE_SIZE; i++) {
+  30   2              for (j = 0; j < OLED_WIDTH; j++) {
+  31   3                  OLED_GRAM[i][j] = 0;
+  32   3              }
+  33   2          }
+  34   1      }
+  35          
+  36          void oled_show_gram() {
+  37   1        u1 i,j;
+  38   1      #ifdef CONSOLE
+                  for (i = 0; i < OLED_PAGE_SIZE; i++) {
+                      for (j = 0; j < OLED_WIDTH; j++) {
+                          printf("%x ", OLED_GRAM[i][j]);
+                      }
+                      printf("\n");
+                  }
+              #else
+  46   1          for (i = 0; i < OLED_PAGE_SIZE; i++) {
+  47   2            oled_command(0xb0 + i);
+  48   2            oled_command(0x00);
+  49   2            oled_command(0x10);
+  50   2            oled_write_page(OLED_GRAM[i], OLED_WIDTH);
+  51   2          }
+  52   1      #endif
+  53   1      }
+*** WARNING C280 IN LINE 37 OF oled.c: 'j': unreferenced local variable
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 2   
+
+  54          
+  55          void oled_set_pixel(u1 x, u1 y) {
+  56   1          if (x > OLED_WIDTH || y > OLED_HEIGHT) {
+  57   2              printf("oled_set_pixel bad params");
+  58   2              return;
+  59   2          }
+  60   1      
+  61   1          // D0 - D8(one page 8 column)
+  62   1          OLED_GRAM[y/8][x] |= (1 << (y & 7)); // 1 << (y % 8)
+  63   1      }
+  64          
+  65          void oled_draw_point(u1 x, u1 y) {
+  66   1          oled_set_pixel(x, y);
+  67   1      }
+  68          
+  69          void oled_draw_xline(u1 x, u1 y, u1 w) {
+  70   1          u1 i;
+  71   1          if (x > OLED_WIDTH || w > OLED_WIDTH || y > OLED_HEIGHT) {
+  72   2              printf("oled_draw_xline bad params");
+  73   2              return;
+  74   2          }
+  75   1      
+  76   1          if (x + w > OLED_WIDTH) {
+  77   2              w = OLED_WIDTH - x;
+  78   2          }
+  79   1      
+  80   1          for (i = 0; i < w; i++) {
+  81   2              oled_draw_point(x+i, y);
+  82   2          }
+  83   1      }
+  84          
+  85          void oled_draw_yline(u1 x, u1 y, u1 h) {
+  86   1          u1 i;
+  87   1          printf("x = %u, y = %u, h = %u\r\n", x, y, h);
+  88   1          if (x > OLED_WIDTH || h > OLED_HEIGHT || y > OLED_HEIGHT) {
+  89   2              printf("oled_draw_yline bad params");
+  90   2              return;
+  91   2          }
+  92   1      
+  93   1          printf("x = %u, y = %u, h = %u\r\n", x, y, h);
+  94   1          if (y + h > OLED_HEIGHT) {
+  95   2              h = OLED_HEIGHT - y;
+  96   2          }
+  97   1          printf("x = %u, y = %u, h = %u\r\n", x, y, h);
+  98   1          for (i = 0; i < h; i++) {
+  99   2              oled_draw_point(x, y+i);
+ 100   2          }
+ 101   1      }
+ 102          
+ 103          void oled_draw_line(u1 x1, u1 y1, u1 x2, u1 y2) {
+ 104   1          u1 dx, dy, n, k;
+ 105   1          float xinc, yinc, x, y;
+ 106   1          char dotten_len;
+ 107   1          if (x1 > OLED_WIDTH || x2 > OLED_WIDTH || y1 > OLED_HEIGHT || y2 > OLED_HEIGHT) {
+ 108   2              printf("oled_draw_line bad params");
+ 109   2              return;
+ 110   2          }
+ 111   1          
+ 112   1          dx = x2 - x1;
+ 113   1          dy = y2 - y1;
+ 114   1          
+ 115   1          if (ABS((int)dx) > ABS((int)dy))
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 3   
+
+ 116   1            n = ABS((int)dx);
+ 117   1          else
+ 118   1            n = ABS((int)dy);
+ 119   1          
+ 120   1          xinc = (float)dx/n;
+ 121   1          yinc = (float)dy/n;
+ 122   1      
+ 123   1          x = (float)x1;
+ 124   1          y = (float)y1;
+ 125   1          for (k=1; k <= n; k++){
+ 126   2            oled_draw_point((u1)(x+0.5), (u1)(y+0.5));
+ 127   2            x += xinc;
+ 128   2            y += yinc;
+ 129   2          }
+ 130   1      }
+*** WARNING C280 IN LINE 106 OF oled.c: 'dotten_len': unreferenced local variable
+ 131          
+ 132          void oled_draw_rect(u1 x, u1 y, u1 w, u1 h) {
+ 133   1          if (x > OLED_WIDTH || w > OLED_WIDTH || 
+ 134   1              (x + w) > OLED_WIDTH || y > OLED_HEIGHT || h > OLED_HEIGHT || 
+ 135   1              (y + h) > OLED_HEIGHT) {
+ 136   2              printf("oled_draw_rect bad params");
+ 137   2              return;
+ 138   2          }
+ 139   1      
+ 140   1          oled_draw_xline(x, y, w);
+ 141   1          oled_draw_xline(x, y + h, w);
+ 142   1          oled_draw_yline(x, y, h);
+ 143   1          oled_draw_yline(x + w, y, h);
+ 144   1      }
+ 145          
+ 146          void oled_fill_rect(u1 x, u1 y, u1 w, u1 h) {
+ 147   1          u1 i = y;
+ 148   1          if (x > OLED_WIDTH || (x + w) > OLED_WIDTH || y > OLED_HEIGHT || (y + h) > OLED_HEIGHT) {
+ 149   2              printf("oled_draw_rect bad params");
+ 150   2              return;
+ 151   2          }
+ 152   1      
+ 153   1          for (; i < y + h; i++) {
+ 154   2              oled_draw_xline(x, y+i, w);
+ 155   2          }
+ 156   1      }
+ 157          
+ 158          void oled_draw_from_bitmap(u1 x, u1 y, u1 width, u1 height, u1* dat) {
+ 159   1          u1 i, j, w, h, p;
+ 160   1          if (x > OLED_WIDTH || y > OLED_HEIGHT) {
+ 161   2              printf("oled_draw_from_bitcode bad params");
+ 162   2              return;
+ 163   2          }
+ 164   1      
+ 165   1          if (width > OLED_WIDTH || height > OLED_HEIGHT) {
+ 166   2              printf("oled_draw_from_bitcode bad params");
+ 167   2              return;
+ 168   2          }
+ 169   1      
+ 170   1          w = width;
+ 171   1          h = height;
+ 172   1          
+ 173   1          if (x + width > OLED_WIDTH) {
+ 174   2              width = OLED_WIDTH - x;
+ 175   2          }
+ 176   1      
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 4   
+
+ 177   1          if (y + height > OLED_WIDTH) {
+ 178   2              height = OLED_WIDTH - height;
+ 179   2          }
+ 180   1      
+ 181   1          p = (width+7)/8;
+ 182   1      
+ 183   1      #if defined(VERI_SCAN_LSB_BIT_REVERSE)
+ 184   1          for (i = 0; i < width; i++) {
+ 185   2              for (j = 0; j < height; j++) { // up to down 8 bit as 1 byte
+ 186   3                  if (((*(dat + (j >> 3) + i*8)) >> (j&7)) & 1) {
+ 187   4                      oled_draw_point(x+i, y+j);
+ 188   4                  }
+ 189   3              }
+ 190   2          }
+ 191   1      #elif defined(HORI_SCAN_LSB_BIT_REVERSE)
+                  for (j = 0; j < height; j++) {
+                      for (i = 0; i < width; i++) {
+                          if ((*(dat + i/8 + j*p) >> (i&7)) & 1) {
+                              oled_draw_point(x+i, y+j);
+                          }
+                      }
+                  }
+              #else
+                  // left to right LSB
+                  for (j = 0; j < height; j++) {
+                    for (i = 0; i < width; i++) {
+                      if (*(dat + + i/8 + j*p) & (132 >> (i&7))) {
+                        oled_draw_point(x+i, y+j);
+                      }
+                    }
+                  }
+              #endif
+ 209   1      }
+ 210          
+ 211          void oled_draw_char(u1 x, u1 y, u1 w, u1 h, u1 sz) {
+ 212   1        int i, j, px, py, k;
+ 213   1        u1* p;
+ 214   1        int fc, l;
+ 215   1        if (x > OLED_WIDTH || y > OLED_HEIGHT || w > OLED_WIDTH || h > OLED_HEIGHT
+ 216   1          || x + w > OLED_WIDTH || y + h > OLED_HEIGHT) {
+ 217   2            printf("oled_draw_CN bad params\r\n");
+ 218   2            return;
+ 219   2          }
+ 220   1      
+ 221   1        if (sz == 32) {
+ 222   2          fc = sizeof(Cn32_Table) / (w * h/OLED_ROW_BIT_SZ);
+ 223   2        } else if (sz == 16) {
+ 224   2          fc = sizeof(Font16_Table) / (w * h/OLED_ROW_BIT_SZ);
+ 225   2        } else {
+ 226   2          fc = sizeof(Font64_Table) / (w * h/OLED_ROW_BIT_SZ);
+ 227   2        }
+ 228   1        
+ 229   1        // for test 32 * 32, for real Font
+ 230   1        for (l = 0; l < fc; l++) {
+ 231   2          if (sz == 32) {
+ 232   3            p = Cn32_Table[l];
+ 233   3          } else if (sz == 16) {
+ 234   3            p = Font16_Table[l];
+ 235   3          } else {
+ 236   3            p = Font64_Table[l];
+ 237   3          }
+ 238   2          
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 5   
+
+ 239   2          for ( i = 0; i < w; i++) {
+ 240   3            px = x + ((l * w + i) & (OLED_MAX_LINE_SZ-1));
+ 241   3            
+ 242   3            for (j = 0; j < h; j++) {
+ 243   4              py = y + j + ((l * w) / OLED_MAX_LINE_SZ) * h;
+ 244   4              if (((*(p + (j >> 3) * w + i)) >> (j & 7)) & 1) {
+ 245   5                oled_draw_point(px, py);
+ 246   5              }
+ 247   4            }
+ 248   3          }
+ 249   2        }
+ 250   1      }
+*** WARNING C280 IN LINE 212 OF oled.c: 'k': unreferenced local variable
+ 251          
+ 252          
+ 253          void oled_test() {
+ 254   1        time_HoggingDelayMs(1000);
+ 255   1        oled_clear_gram();
+ 256   1        time_HoggingDelayMs(1000);
+ 257   1        oled_fill_gram();
+ 258   1        oled_show_gram();
+ 259   1        time_HoggingDelayMs(1000);
+ 260   1        oled_clear_gram();
+ 261   1        oled_draw_xline(0, 0, 60);
+ 262   1        oled_draw_xline(0, 8, 80);
+ 263   1        oled_draw_xline(0, 16, 90);
+ 264   1        oled_draw_xline(0, 24, 100);
+ 265   1        oled_draw_xline(0, 32, 110);
+ 266   1        oled_draw_xline(0, 40, 120);
+ 267   1        oled_draw_xline(0, 48, 130);
+ 268   1        oled_draw_xline(0, 56, 132);
+ 269   1        oled_show_gram();
+ 270   1        time_HoggingDelayMs(1000);
+ 271   1        oled_clear_gram();
+ 272   1        oled_draw_yline(2, 0, 64);
+ 273   1        oled_draw_yline(12, 0, 64);
+ 274   1        oled_draw_yline(22, 8, 56);
+ 275   1        oled_draw_yline(32, 16, 48);
+ 276   1        oled_draw_yline(42, 24, 40);
+ 277   1        oled_draw_yline(52, 32, 32);
+ 278   1        oled_draw_yline(62, 40, 24);
+ 279   1        oled_draw_yline(72, 48, 16);
+ 280   1        oled_draw_yline(82, 56, 8);
+ 281   1        oled_draw_yline(92, 56, 8);
+ 282   1        oled_draw_yline(102, 56, 8);
+ 283   1        oled_draw_yline(112, 56, 8);
+ 284   1        oled_draw_yline(122, 56, 8);
+ 285   1        oled_show_gram();
+ 286   1        time_HoggingDelayMs(1000);
+ 287   1        oled_clear_gram();  
+ 288   1        oled_draw_line(2, 0, 66, 64);
+ 289   1        oled_draw_line(66, 0, 2, 64);
+ 290   1        oled_show_gram();
+ 291   1        time_HoggingDelayMs(1000);
+ 292   1        oled_clear_gram();  
+ 293   1        oled_draw_rect(2, 0, 60, 50);
+ 294   1        oled_show_gram();
+ 295   1        time_HoggingDelayMs(1000);
+ 296   1        oled_clear_gram();  
+ 297   1        oled_fill_rect(40, 0, 60, 50);
+ 298   1        oled_show_gram();
+ 299   1        time_HoggingDelayMs(1000);
+C51 COMPILER V9.60.0.0   OLED                                                              03/08/2022 17:35:07 PAGE 6   
+
+ 300   1        oled_clear_gram();
+ 301   1        oled_draw_from_bitmap(0, 0, 128, 64, gImage_a);
+ 302   1        oled_show_gram();
+ 303   1        time_HoggingDelayMs(1000);
+ 304   1        oled_clear_gram();
+ 305   1        oled_draw_from_bitmap(0, 0, 112, 64, gImage_b);
+ 306   1        oled_show_gram();
+ 307   1        time_HoggingDelayMs(1000);
+ 308   1        oled_clear_gram();
+ 309   1        oled_draw_from_bitmap(0, 0, 126, 64, gImage_c);
+ 310   1        oled_show_gram();
+ 311   1        time_HoggingDelayMs(1000);
+ 312   1        oled_clear_gram();
+ 313   1        oled_draw_char(0, 0, 64, 64, 64);
+ 314   1        oled_show_gram();
+ 315   1        time_HoggingDelayMs(1000);
+ 316   1        oled_clear_gram();
+ 317   1        oled_draw_char(0, 0, 32, 32, 32);
+ 318   1        oled_show_gram();
+ 319   1        time_HoggingDelayMs(1000);
+ 320   1        oled_clear_gram();
+ 321   1        oled_draw_char(2, 0, 8, 16, 16);
+ 322   1        oled_show_gram();
+ 323   1        time_HoggingDelayMs(20000);
+ 324   1      
+ 325   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2386    ----
+   CONSTANT SIZE    =   3145    ----
+   XDATA SIZE       =   3536    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      79
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  3 WARNING(S),  0 ERROR(S)

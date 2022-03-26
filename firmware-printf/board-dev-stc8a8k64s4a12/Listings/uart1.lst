@@ -1,0 +1,55 @@
+C51 COMPILER V9.60.0.0   UART1                                                             03/08/2022 17:17:57 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE UART1
+OBJECT MODULE PLACED IN .\Objects\uart1.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE uart1.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\uar
+                    -t1.lst) TABS(2) OBJECT(.\Objects\uart1.obj)
+
+line level    source
+
+   1          /*
+   2           * Copyright        : shendong MCU studio
+   3           * File Description : UART1 driver
+   4           * Created          : by oliverzhang@shendongmcu.com
+   5           */
+   6          
+   7          #include "global.h"
+   8          
+   9          void uart1_Initialization(void) //115200bps@24.000MHz
+  10          {
+  11   1        SCON = 0x50;    //8???,?????
+  12   1        AUXR |= 0x40;   //???1???Fosc,?1T
+  13   1        AUXR &= 0xFE;   //??1?????1???????
+  14   1        TMOD &= 0x0F;   //?????1?16???????
+  15   1        TL1 = 0xCC;   //??????
+  16   1        TH1 = 0xFF;   //??????
+  17   1        ET1 = 0;    //?????1??
+  18   1        TR1 = 1;    //?????1
+  19   1      
+  20   1      }
+  21          
+  22          /*implemented for printf() */
+  23          char putchar(char c)  
+  24          {
+  25   1        SBUF = c;
+  26   1        while (TI == 0);
+  27   1        TI = 0;
+  28   1        return c;
+  29   1      }
+  30          
+  31          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =     31    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
