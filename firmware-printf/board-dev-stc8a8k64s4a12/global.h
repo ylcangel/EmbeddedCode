@@ -1,9 +1,3 @@
-/*
- * Copyright        : Shendong MCU studio
- * File Description : Globally Included head file.
- * Created          : oliverzhang@shendongmcu.com
- */
-
 #ifndef __GLOBAL_H__
 #define __GLOBAL_H__
 

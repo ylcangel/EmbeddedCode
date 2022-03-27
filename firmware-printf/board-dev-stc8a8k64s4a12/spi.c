@@ -1,3 +1,4 @@
+// author: AngelToms
 #include "global.h"
 
 #define SPI_CTR_MASK 0xdf

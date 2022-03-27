@@ -1,9 +1,3 @@
-/*
- * Copyright        : Shendong mcu studio
- * File Description : Time related function.
- * Created          : by oliverzhang@shendongmcu.com
- */
-
 #include "global.h"
 
 /*System ticks*/

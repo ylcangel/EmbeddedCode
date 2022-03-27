@@ -52,191 +52,191 @@
 #define IS_BUSY(S_Register1) (S_Register1 & 0x1)
 
 static void write_enable() {
-	SPI_ENABLE;
-	spi_rw(WRITE_ENABLE);
-	SPI_DISABLE;
+    SPI_ENABLE;
+    spi_rw(WRITE_ENABLE);
+    SPI_DISABLE;
 }
 
 static void write_disable() {
-	SPI_ENABLE;
-	spi_rw(WRITE_DISABLE);
-	SPI_DISABLE;
+    SPI_ENABLE;
+    spi_rw(WRITE_DISABLE);
+    SPI_DISABLE;
 }
 
 extern u1 read_SR1() {
-	u1 sr;
-	SPI_ENABLE;
-	spi_rw(READ_STATUS_REGISTER1);
-	sr = spi_rw(DUMMY_DATA);
-	SPI_DISABLE;
-	return sr;
+    u1 sr;
+    SPI_ENABLE;
+    spi_rw(READ_STATUS_REGISTER1);
+    sr = spi_rw(DUMMY_DATA);
+    SPI_DISABLE;
+    return sr;
 }
 
 extern u1 read_SR2() {
-	u1 sr;
-	SPI_ENABLE;
-	spi_rw(READ_STATUS_REGISTER2);
-	sr = spi_rw(DUMMY_DATA);
-	SPI_DISABLE;
-	return sr;
+    u1 sr;
+    SPI_ENABLE;
+    spi_rw(READ_STATUS_REGISTER2);
+    sr = spi_rw(DUMMY_DATA);
+    SPI_DISABLE;
+    return sr;
 }
 
 
 extern void write_SR(u2 val) {
-	u1 low = val & 0xf;
-	u1 high = (val >> 8) & 0xf;
-	write_enable();
-	SPI_ENABLE;
-	spi_rw(WRITE_STATUS_REGISTER);
-	spi_rw(high); // MSB 
-	spi_rw(low); //
-	SPI_DISABLE;
+    u1 low = val & 0xf;
+    u1 high = (val >> 8) & 0xf;
+    write_enable();
+    SPI_ENABLE;
+    spi_rw(WRITE_STATUS_REGISTER);
+    spi_rw(high); // MSB 
+    spi_rw(low); //
+    SPI_DISABLE;
 }
 
 extern void read(u1* pbuf, u4 len, u4 addr) {
-	SPI_ENABLE;
-	spi_rw(READ_DATA);
-	spi_rw((u1)(addr >> 16));
-	spi_rw((u1)(addr >> 8));
-	spi_rw((u1)(addr));
-	while(len--) {
-		*pbuf = spi_rw(DUMMY_DATA);
-		pbuf++;
-	}
-	SPI_DISABLE;
+    SPI_ENABLE;
+    spi_rw(READ_DATA);
+    spi_rw((u1)(addr >> 16));
+    spi_rw((u1)(addr >> 8));
+    spi_rw((u1)(addr));
+    while(len--) {
+        *pbuf = spi_rw(DUMMY_DATA);
+        pbuf++;
+    }
+    SPI_DISABLE;
 }
 
 extern void fast_read(u1* pbuf, u4 len, u4 addr) {
-	SPI_ENABLE;
-	spi_rw(FAST_READ);
-	spi_rw((u1)(addr >> 16));
-	spi_rw((u1)(addr >> 8));
-	spi_rw((u1)(addr));
-	spi_rw(DUMMY_DATA);
-	while(len--) {
-		*pbuf = spi_rw(DUMMY_DATA);
-		pbuf++;
-	}
-	SPI_DISABLE;
+    SPI_ENABLE;
+    spi_rw(FAST_READ);
+    spi_rw((u1)(addr >> 16));
+    spi_rw((u1)(addr >> 8));
+    spi_rw((u1)(addr));
+    spi_rw(DUMMY_DATA);
+    while(len--) {
+        *pbuf = spi_rw(DUMMY_DATA);
+        pbuf++;
+    }
+    SPI_DISABLE;
 }
 
 extern void page_write(u1* pbuf, u4 len, u4 addr) {
-	if (len > PAGE_MAX_BYTES) {
-		printf("write size over the limit");
-		return;
-	}
-	
-	if ( len == PAGE_MAX_BYTES) {
-		addr &= 0xffff00;
-	}
-	
-	write_enable();
-	
-	SPI_ENABLE;
-	spi_rw(PAGE_PROGARAM);
-	spi_rw((u1)(addr >> 16));
-	spi_rw((u1)(addr >> 8));
-	spi_rw((u1)(addr));
+    if (len > PAGE_MAX_BYTES) {
+        printf("write size over the limit");
+        return;
+    }
+    
+    if ( len == PAGE_MAX_BYTES) {
+        addr &= 0xffff00;
+    }
+    
+    write_enable();
+    
+    SPI_ENABLE;
+    spi_rw(PAGE_PROGARAM);
+    spi_rw((u1)(addr >> 16));
+    spi_rw((u1)(addr >> 8));
+    spi_rw((u1)(addr));
 
-	while(len--) {
-		spi_rw(*pbuf);
-		pbuf++;
-	}
-	SPI_DISABLE;
-	
-	while(IS_BUSY(read_SR1()));
+    while(len--) {
+        spi_rw(*pbuf);
+        pbuf++;
+    }
+    SPI_DISABLE;
+    
+    while(IS_BUSY(read_SR1()));
 }
 
 extern void sector_earse(u4 sectorNr) {
-	u4 addr = 0;
-	if (sectorNr == 0) {
-		sectorNr = 1;
-	}
-	
-	sectorNr = sectorNr -1;
-	
-	if (sectorNr > MAX_SECTOR_SIZE) {
-		printf("bad sector nr");
-		return;
-	}
-	
-	addr = (sectorNr * SECTOR_SIZE) & 0x3ff000;
-	
-	write_enable();
-	while(IS_BUSY(read_SR1()));
-		
-	SPI_ENABLE;
-	spi_rw(SECTOR_ERASE);
-	spi_rw((u1)(addr >> 16));
-	spi_rw((u1)(addr >> 8));
-	spi_rw((u1)(addr));
-	
-	SPI_DISABLE;
-	while(IS_BUSY(read_SR1()));
-	
+    u4 addr = 0;
+    if (sectorNr == 0) {
+        sectorNr = 1;
+    }
+    
+    sectorNr = sectorNr -1;
+    
+    if (sectorNr > MAX_SECTOR_SIZE) {
+        printf("bad sector nr");
+        return;
+    }
+    
+    addr = (sectorNr * SECTOR_SIZE) & 0x3ff000;
+    
+    write_enable();
+    while(IS_BUSY(read_SR1()));
+        
+    SPI_ENABLE;
+    spi_rw(SECTOR_ERASE);
+    spi_rw((u1)(addr >> 16));
+    spi_rw((u1)(addr >> 8));
+    spi_rw((u1)(addr));
+    
+    SPI_DISABLE;
+    while(IS_BUSY(read_SR1()));
+    
 }
 
 extern void block_earse(boolean is32k, int blockNr) {
-	u4 addr = 0;
-	if (blockNr == 0) {
-		blockNr =1;
-	}
-	blockNr = blockNr -1;
-	
-	if (!is32k) {
-		if (blockNr > MAX_BLOCK_64K_NR) {
-			printf("bad block nr with 64k");
-			return;
-		}
-		
-		addr = (blockNr * BLOCK_SIZE_64K) & 0x3f0000;
-	}
-	
-	if (blockNr > BLOCK_ERASE_32K) {
-			printf("bad block nr with 32k");
-			return;
-	}
-	
-	if (is32k) {
-		addr = (blockNr * BLOCK_SIZE_32K) & 0x7f8000;
-	}
-	
-	write_enable();
-	while(IS_BUSY(read_SR1()));
-	
-	SPI_ENABLE;
-	if (is32k) {
-		spi_rw(BLOCK_ERASE_32K);
-	} else {
-		spi_rw(BLOCK_ERASE_64K);
-	}
-	
-	spi_rw((u1)(addr >> 16));
-	spi_rw((u1)(addr >> 8));
-	spi_rw((u1)(addr));
-	
-	SPI_DISABLE;
-	while(IS_BUSY(read_SR1()));
+    u4 addr = 0;
+    if (blockNr == 0) {
+        blockNr =1;
+    }
+    blockNr = blockNr -1;
+    
+    if (!is32k) {
+        if (blockNr > MAX_BLOCK_64K_NR) {
+            printf("bad block nr with 64k");
+            return;
+        }
+        
+        addr = (blockNr * BLOCK_SIZE_64K) & 0x3f0000;
+    }
+    
+    if (blockNr > BLOCK_ERASE_32K) {
+            printf("bad block nr with 32k");
+            return;
+    }
+    
+    if (is32k) {
+        addr = (blockNr * BLOCK_SIZE_32K) & 0x7f8000;
+    }
+    
+    write_enable();
+    while(IS_BUSY(read_SR1()));
+    
+    SPI_ENABLE;
+    if (is32k) {
+        spi_rw(BLOCK_ERASE_32K);
+    } else {
+        spi_rw(BLOCK_ERASE_64K);
+    }
+    
+    spi_rw((u1)(addr >> 16));
+    spi_rw((u1)(addr >> 8));
+    spi_rw((u1)(addr));
+    
+    SPI_DISABLE;
+    while(IS_BUSY(read_SR1()));
 }
 
 extern void chip_earse() {
-	write_enable();
-	while(IS_BUSY(read_SR1()));
-	SPI_ENABLE;
-	spi_rw(CHIP_ERASE);
-	SPI_DISABLE;
-	while(IS_BUSY(read_SR1()));
+    write_enable();
+    while(IS_BUSY(read_SR1()));
+    SPI_ENABLE;
+    spi_rw(CHIP_ERASE);
+    SPI_DISABLE;
+    while(IS_BUSY(read_SR1()));
 }
 
 extern void read_device_id() {
-	SPI_ENABLE;
-	spi_rw(MANUFACTURER_DEVICE_ID);
-	spi_rw(DUMMY_DATA);
-	spi_rw(DUMMY_DATA);
-	spi_rw(0);
-	
-	printf("MANUFACTURER ID: %x\r\n", spi_rw(DUMMY_DATA));
-	printf("DEVICE ID: %x\r\n", spi_rw(DUMMY_DATA));
-	SPI_DISABLE;
+    SPI_ENABLE;
+    spi_rw(MANUFACTURER_DEVICE_ID);
+    spi_rw(DUMMY_DATA);
+    spi_rw(DUMMY_DATA);
+    spi_rw(0);
+    
+    printf("MANUFACTURER ID: %x\r\n", spi_rw(DUMMY_DATA));
+    printf("DEVICE ID: %x\r\n", spi_rw(DUMMY_DATA));
+    SPI_DISABLE;
 }
 

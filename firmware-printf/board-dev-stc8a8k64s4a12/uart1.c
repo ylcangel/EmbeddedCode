@@ -1,9 +1,3 @@
-/*
- * Copyright        : shendong MCU studio
- * File Description : UART1 driver
- * Created          : by oliverzhang@shendongmcu.com
- */
-
 #include "global.h"
 
 void uart1_Initialization(void) //115200bps@24.000MHz
